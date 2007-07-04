@@ -1,0 +1,10 @@
+Version 0.2:
+------------------------
+* Added SINGSING_NODUP_SCAN scanning mode, remove duplicate results
+* Added auto adjust sleep time on send syn procedures
+* Fixed a lot of inital bugs
+* Added examples section (zucca.c and ssh_scan.c)
+
+Version 0.1:
+------------------------
+* First release of this project
