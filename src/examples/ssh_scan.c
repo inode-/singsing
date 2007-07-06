@@ -2,6 +2,10 @@
  * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
  * All rights reserved.                                                      *
  *                                                                           *
+ * ssh_scan.c                                                                *
+ *                                                                           *
+ * http://singsing.sourceforge.net                                           *
+ *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
  * are met:                                                                  *

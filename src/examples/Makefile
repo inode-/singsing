@@ -1,3 +1,4 @@
+#  * $Id::                                                                  $: *
 all:
 	@echo "Please use one of the following make choice:"
 	@echo "make linux"

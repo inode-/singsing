@@ -3,7 +3,7 @@
  *                                                                           *
  * http://singsing.sourceforge.net                                           *
  *                                                                           *
- * $Id$                                                                      *
+ * $Id::                                                                  $: *
  *                                                                           *
  * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
  * All rights reserved.                                                      *
