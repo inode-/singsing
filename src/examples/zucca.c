@@ -1,6 +1,9 @@
 /*****************************************************************************
+ * zucca.c is a part of singsing project                                     *
  *                                                                           *
- * zucca is a port scanner based on singsing project                         *
+ * http://singsing.sourceforge.net                                           *
+ *                                                                           *
+ * $Id$                                                                      *
  *                                                                           *
  * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
  * All rights reserved.                                                      *
@@ -60,8 +63,6 @@ int main( int argc, char ** argv )
 	struct singsing_result_queue * cur_res;
 	struct in_addr result;
 
-
-
 	while((opt = getopt(argc, argv, "i:b:p:h:ct:s:")) != -1)
 	{
 		switch (opt)
@@ -110,6 +111,8 @@ int main( int argc, char ** argv )
 
 
 	singsing_set_scanmode( SINGSING_NODUP_SCAN );
+	singsing_set_scanmode( SINGSING_SEGMENT_SCAN );
+	 
 
 	fprintf( stderr, " Starting scan...\n\n");
 

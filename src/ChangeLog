@@ -1,3 +1,8 @@
+Version 0.3:
+------------------------
+* Added SINGSING_SEGMENT_SCAN mode
+* Fixed some unckecked variables at start
+
 Version 0.2:
 ------------------------
 * Added SINGSING_NODUP_SCAN scanning mode, remove duplicate results
