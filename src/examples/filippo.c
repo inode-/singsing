@@ -3,7 +3,7 @@
  *                                                                           *
  * http://singsing.sourceforge.net                                           *
  *                                                                           *
- * $Id:: zucca.c 8 2007-07-06 19:09:17Z inode_                            $: *
+ * $Id::                                                                  $: *
  *                                                                           *
  * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
  * All rights reserved.                                                      *
@@ -41,8 +41,8 @@
 #define VERSION "0.1"
 
 #define SOCKS_PORT	1080
-#define READ_TIMEOUT	10
-#define CONNECT_TIMEOUT 10
+#define READ_TIMEOUT	30
+#define CONNECT_TIMEOUT 30
 
 void usage( char * argv );
 int socks_v4_scan(char * host, unsigned int port); 
@@ -104,10 +104,10 @@ int main(int argc, char ** argv)
 		cur_res = singsing_get_result();
 		if( cur_res != NULL ) {
 			result.s_addr = ntohl(cur_res->ip);
-			fprintf(stderr, " port opened on %s\n",inet_ntoa( result ) );
+			//fprintf(stderr, " port opened on %s\n",inet_ntoa( result ) );
 			if( socks_v4_scan(strdup(inet_ntoa( result )), SOCKS_PORT) == 0 )
 				socks_v5_scan(strdup(inet_ntoa( result )), SOCKS_PORT);
-			fprintf(stderr, " end %s\n", inet_ntoa( result ));
+			//fprintf(stderr, " end %s\n", inet_ntoa( result ));
 			
 			fflush(stderr);
 			fflush(stdout);
@@ -142,7 +142,6 @@ int net_connect( char * host, int port)
 {
 	int sd;
 	struct sockaddr_in servAddr;
-	struct hostent *h;
 	int flags, flags_old, retval, sock_len;
 	struct sockaddr_in sin;
 	struct timeval tv;
