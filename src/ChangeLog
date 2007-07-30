@@ -1,5 +1,9 @@
 $Id$
 
+Current:
+------------------------
+* Added filippo.c (socks scanner) on example session
+
 Version 0.3:
 ------------------------
 * Added SINGSING_SEGMENT_SCAN mode
