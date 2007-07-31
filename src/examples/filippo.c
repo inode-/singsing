@@ -126,7 +126,7 @@ int main(int argc, char ** argv)
 
 	singsing_add_port( port );
 
-        //singsing_set_scanmode( SINGSING_NODUP_SCAN );
+        singsing_set_scanmode( SINGSING_NODUP_SCAN );
 
         singsing_set_scanmode( SINGSING_SEGMENT_SCAN );
 
