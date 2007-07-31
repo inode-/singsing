@@ -48,11 +48,19 @@ void usage( char * argv );
 int socks_v4_scan(char * host, unsigned int port); 
 int socks_v5_scan(char * host, unsigned int port);
 
+unsigned int port = SOCKS_PORT;
+
+int connect_ip[4];
+unsigned int target_port;
+unsigned int target_port1;
+
 
 int main(int argc, char ** argv)
 {
 	char * target = NULL;
 	char * device = NULL;
+	char * ip = NULL;
+	char * star = NULL ;
 	char opt;
 	struct in_addr result;
         time_t start_time;
@@ -61,7 +69,7 @@ int main(int argc, char ** argv)
 
 	struct singsing_result_queue * cur_res;
 
-	while((opt = getopt(argc, argv, "i:h:b:")) != -1)
+	while((opt = getopt(argc, argv, "i:h:b:c:")) != -1)
 	{
 		switch (opt)
 		{
@@ -74,13 +82,41 @@ int main(int argc, char ** argv)
 			case 'b':
 				band = atoi( optarg );
 				break;
+			case 'c':
+				ip = optarg;
+				break;
+			case 'p':
+				port = atoi( optarg );
+				break;
 			default:
 				usage( argv[0] );
 		}
 	}
 
-	if( target == NULL || device == NULL )
+	if( target == NULL || device == NULL || ip == NULL )
 		usage( argv[0] );
+
+	star = strchr( ip, '.');
+	*star = 0x0;
+	connect_ip[0] = atoi(ip);
+	ip = star + 1;
+
+        star = strchr( ip, '.');
+        *star = 0x0;
+        connect_ip[1] = atoi(ip);
+        ip = star + 1;
+
+        star = strchr( ip, '.');
+        *star = 0x0;
+        connect_ip[2] = atoi(ip);
+        ip = star + 1;
+
+        star = strchr( ip, ':');
+        *star = 0x0;
+        connect_ip[3] = atoi(ip);
+        ip = star + 1;
+
+	target_port = atol( ip );
 
 	singsing_set_scan_interface( device );
 
@@ -88,9 +124,9 @@ int main(int argc, char ** argv)
 
 	singsing_set_scan_host( target );
 
-	singsing_add_port( SOCKS_PORT );
+	singsing_add_port( port );
 
-        singsing_set_scanmode( SINGSING_NODUP_SCAN );
+        //singsing_set_scanmode( SINGSING_NODUP_SCAN );
 
         singsing_set_scanmode( SINGSING_SEGMENT_SCAN );
 
@@ -105,8 +141,9 @@ int main(int argc, char ** argv)
 		if( cur_res != NULL ) {
 			result.s_addr = ntohl(cur_res->ip);
 			//fprintf(stderr, " port opened on %s\n",inet_ntoa( result ) );
-			if( socks_v4_scan(strdup(inet_ntoa( result )), SOCKS_PORT) == 0 )
-				socks_v5_scan(strdup(inet_ntoa( result )), SOCKS_PORT);
+			//if( socks_v4_scan(strdup(inet_ntoa( result )), port) == 0 )
+			socks_v4_scan(strdup(inet_ntoa( result )), port);
+				socks_v5_scan(strdup(inet_ntoa( result )), port);
 			//fprintf(stderr, " end %s\n", inet_ntoa( result ));
 			
 			fflush(stderr);
@@ -131,10 +168,12 @@ int main(int argc, char ** argv)
 
 void usage( char * argv )
 {
-	fprintf(stderr, "\n Usage: %s -i <arg> -h <arg> [-b <arg>]\n", argv);
+	fprintf(stderr, "\n Usage: %s -i <arg> -h <arg> -c <arg> [-b <arg> -p <arg>]\n", argv);
 	fprintf(stderr, "\t-i Interface\n");
 	fprintf(stderr, "\t-h Target (CIDR format)\n");
 	fprintf(stderr, "\t-b Bandwidth (Default 5KB/s)\n");
+	fprintf(stderr, "\t-p Port (Default 1080)\n");
+	fprintf(stderr, "\t-c Try connect to (ip:port)\n");
 	exit(0);
 } 
 
@@ -244,7 +283,21 @@ int socks_v4_scan(char * host, unsigned int port)
 	/*0x04 | 0x01 | 0x00 0x50 | 0x42 0x66 0x07 0x63 | 0x46 0x72 0x65 0x64 0x00*/
 
 	// Trying to connect to google (209.85.135.99)
-	write(sock,"\x04\x01\x00\x50\xD1\x55\x87\x63\x46\x72\x65\x64\x00",13);
+
+
+	memcpy(buff, "\x04\x01", 2);
+
+	target_port1 = htons( target_port );
+
+	memcpy(buff + 2, &target_port1, 2);
+	memcpy(buff + 4, &connect_ip[0], 1);
+        memcpy(buff + 5, &connect_ip[1], 1);
+        memcpy(buff + 6, &connect_ip[2], 1);
+        memcpy(buff + 7, &connect_ip[3], 1);
+	memcpy(buff + 8 , "\x46\x72\x65\x64\x00",5);
+
+
+	write(sock,buff,13);
 
         tv.tv_sec = READ_TIMEOUT;
         tv.tv_usec = 0;
@@ -372,9 +425,59 @@ int socks_v5_scan(char * host, unsigned int port)
                 return 0;
         }
 
-        fprintf(stderr,"Socks v5: %s (AUTH OK)\n", host);
+        memcpy(buff, "\x05\x01\x00\x01", 4);
+
+        target_port1 = ntohs( target_port );
+
+        memcpy(buff + 4, &connect_ip[0], 1);
+        memcpy(buff + 5, &connect_ip[1], 1);
+        memcpy(buff + 6, &connect_ip[2], 1);
+        memcpy(buff + 7, &connect_ip[3], 1);
+        memcpy(buff + 8, &target_port1, 2);
+
+        write(sock,buff,10);
+
+        tv.tv_sec = READ_TIMEOUT;
+        tv.tv_usec = 0;
+
+        flags = fcntl( sock, F_GETFL,0);
+        flags |= O_NONBLOCK;
+        fcntl( sock, F_SETFL, flags);
+
+        FD_ZERO( &rfds );
+        FD_SET( sock, &rfds );
+
+        start_time = time(NULL);
+
+        while( select( FD_SETSIZE , &rfds, (fd_set *) 0, (fd_set *) 0, &tv) > 0) {
+                i = read( sock, buff ,sizeof( buff ));
+                l += i;
+
+                cur_time = time(NULL);
+
+                if( i < 0) {
+                        close( sock );
+                        return 0;
+                }
+
+                if( l >= 10)
+                        break;
+
+                // resolving CLOSE_WAIT problems
+                if( difftime(cur_time, start_time) > READ_TIMEOUT) {
+                        close( sock );
+                        return 0;
+                }
+
+
+
+                usleep(3000);
+                p += i;
+        }
+
+        if( memcmp(buff,"\x05\x00", 2 ) == 0 ) 
+                fprintf(stderr,"Socks v5: %s (WORKING)\n", host);
 
         close(sock);
         return 1;
 }
-

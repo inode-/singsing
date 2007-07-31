@@ -1,0 +1,12 @@
+
+examples/filippo.c
+----------------------------
+A simple socks v4&v5 scanner
+
+examples/ssh_scan.c
+----------------------------
+SSH scanner (no banner grabbing)
+
+examples/zucca.c
+----------------------------
+syn scanner
