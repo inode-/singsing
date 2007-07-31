@@ -10,3 +10,7 @@ SSH scanner (no banner grabbing)
 examples/zucca.c
 ----------------------------
 syn scanner
+
+examples/telnet_grabber.c
+----------------------------
+telnet banner grabbing tool
