@@ -3,6 +3,7 @@ $Id$
 Current:
 ------------------------
 * Added filippo.c (socks scanner) on example session
+* Added telnet_grabber.c on example session
 
 Version 0.3:
 ------------------------
