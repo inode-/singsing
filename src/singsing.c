@@ -401,13 +401,7 @@ int singsing_init( void )
 
 	gettimeofday( &second, NULL);
 
-// 	singsing_sleep_band = 0;
-
-// 	if( first.tv_sec != second.tv_sec )
-// 		singsing_sleep_band += (second.tv_sec-first.tv_sec) * 1000000;
-	
 	singsing_sleep_band = (second.tv_sec * 1000000 + second.tv_usec) - (first.tv_sec * 1000000 + first.tv_usec); 
-	//second.tv_usec-first.tv_usec;	
 	
 	singsing_sleep_band = (1000000 - singsing_sleep_band) / (singsing_synps/10);
 
@@ -531,8 +525,6 @@ void * singsing_send_syn_thread(void *parm)
 		(singsing_end_ip - singsing_start_ip)*singsing_ports/difftime(end_time, start_time));
 #endif
 
-	//XXX FIX TIMEOUT
-	// Sleep 15 seconds
 	sleep( SINGSING_TIMEOUT + 15 );	
 
 	singsing_finished = 1;

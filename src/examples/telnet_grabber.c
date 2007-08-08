@@ -60,7 +60,7 @@ int main(int argc, char ** argv)
 
 	struct singsing_result_queue * cur_res;
 
-	while((opt = getopt(argc, argv, "i:h:b:c:")) != -1)
+	while((opt = getopt(argc, argv, "i:h:b:")) != -1)
 	{
 		switch (opt)
 		{
@@ -103,12 +103,9 @@ int main(int argc, char ** argv)
 		cur_res = singsing_get_result();
 		if( cur_res != NULL ) {
 			result.s_addr = ntohl(cur_res->ip);
-			//fprintf(stderr, " port opened on %s\n",inet_ntoa( result ) );
-			//if( socks_v4_scan(strdup(inet_ntoa( result )), port) == 0 )
-			//socks_v4_scan(strdup(inet_ntoa( result )), port);
-			//	socks_v5_scan(strdup(inet_ntoa( result )), port);
+
+			// Grab banner
 			telnet_scan( strdup(inet_ntoa( result )), PORT);
-			//fprintf(stderr, " end %s\n", inet_ntoa( result ));
 			
 			fflush(stderr);
 			fflush(stdout);
@@ -132,12 +129,10 @@ int main(int argc, char ** argv)
 
 void usage( char * argv )
 {
-	fprintf(stderr, "\n Usage: %s -i <arg> -h <arg> -c <arg> [-b <arg> -p <arg>]\n", argv);
+	fprintf(stderr, "\n Usage: %s -i <arg> -h <arg> [-b <arg>]\n", argv);
 	fprintf(stderr, "\t-i Interface\n");
 	fprintf(stderr, "\t-h Target (CIDR format)\n");
 	fprintf(stderr, "\t-b Bandwidth (Default 5KB/s)\n");
-	fprintf(stderr, "\t-p Port (Default 1080)\n");
-	fprintf(stderr, "\t-c Try connect to (ip:port)\n");
 	exit(0);
 } 
 
@@ -149,16 +144,6 @@ int net_connect( char * host, int port)
 	struct sockaddr_in sin;
 	struct timeval tv;
 	fd_set rfds;
-
-  
-	//h = gethostbyname( host );
-//AF_INET
-
-	//if(h==NULL) {
-//perror("pipop");
-		//printf(": unknown host '%s'\n",host);
-		//exit(1);
-	//}
 
 	servAddr.sin_family = AF_INET;
 	//memcpy((char *) &servAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
@@ -235,19 +220,6 @@ int telnet_scan(char * host, unsigned int port)
 
 	if( sock < 0 )
 		return 0;
-
-	// Testing V4 protocol
-/*    * field 1: SOCKS version number, 1 byte, must be 0x04 for this version
-    * field 2: command code, 1 byte:
-          o 0x01 = establish a TCP/IP stream connection
-          o 0x02 = establish a TCP/IP port binding
-    * field 3: network byte order port number, 2 bytes
-    * field 4: network byte order IP address, 4 bytes
-    * field 5: the user ID string, variable length, terminated with a null (0x00)*/
-	/*0x04 | 0x01 | 0x00 0x50 | 0x42 0x66 0x07 0x63 | 0x46 0x72 0x65 0x64 0x00*/
-
-	// Trying to connect to google (209.85.135.99)
-
 
 	write(sock,"\r\n\r\n\r\n",6);
 

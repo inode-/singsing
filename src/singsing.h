@@ -39,7 +39,7 @@
 
 #define _SINGSING_H
 
-#define SINGSING_VERSION "0.2"
+#define SINGSING_VERSION "0.3"
 
 #include <stdio.h>
 #include <unistd.h>
