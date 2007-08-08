@@ -1,6 +1,6 @@
 $Id$
 
-Current:
+Version 0.4:
 ------------------------
 * Added filippo.c (socks scanner) on example session
 * Added telnet_grabber.c on example session
