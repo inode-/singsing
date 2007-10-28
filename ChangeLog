@@ -1,5 +1,9 @@
 $Id$
 
+* Added show closed port on zucca
+* Fixed -p problem on filippo
+* Added ability to get closed port on singsing engine
+
 Version 0.4:
 ------------------------
 * Added filippo.c (socks scanner) on example session
