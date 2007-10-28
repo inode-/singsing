@@ -69,13 +69,18 @@
 #define SINGSING_BASIC_SCAN 	0
 #define SINGSING_NODUP_SCAN	2
 #define SINGSING_SEGMENT_SCAN	4
+#define SINGSING_SHOW_CLOSED	8
 
 #define SINGSING_TIMEOUT 	30
+
+#define SINGSING_OPEN		0
+#define SINGSING_CLOSE		1
 
 struct singsing_result_queue {
 	unsigned long ip;
 	unsigned int port;
-	time_t rec_time;
+	unsigned char type;
+	time_t rec_time;	
 	struct singsing_result_queue * next;
 };
 

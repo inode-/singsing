@@ -262,10 +262,14 @@ void * singsing_processing_thread(void *parm)
 
                 // Try to fix with PUSH FLASG?
 		// If the packet it's an ACK we fill the result queue
-		if( (tcp_p.th_flags & TH_ACK) && !(tcp_p.th_flags & TH_RST) ) {
+		if( ((tcp_p.th_flags & TH_RST) && (singsing_scan_mode & SINGSING_SHOW_CLOSED)) || 
+			( (tcp_p.th_flags & TH_ACK) && !(tcp_p.th_flags & TH_RST) )){
 
 #ifdef DEBUG
-fprintf(stderr, " open %s:%u\n",inet_ntoa(ip_p.ip_src),ntohs( tcp_p.th_sport ));
+if( tcp_p.th_flags & TH_RST )
+	fprintf(stderr, " close %s:%u\n",inet_ntoa(ip_p.ip_src),ntohs( tcp_p.th_sport ));
+else
+	fprintf(stderr, " open %s:%u\n",inet_ntoa(ip_p.ip_src),ntohs( tcp_p.th_sport ));
 #endif
 
 			singsing_result_tmp = malloc( sizeof( struct singsing_result_queue) );
@@ -278,6 +282,11 @@ fprintf(stderr, " open %s:%u\n",inet_ntoa(ip_p.ip_src),ntohs( tcp_p.th_sport ));
 			//singsing_result_tmp->ip = htonl( ip_pack->ip_src.s_addr );
 			singsing_result_tmp->ip = htonl( ip_p.ip_src.s_addr );
 
+			if( (tcp_p.th_flags & TH_RST) )
+				singsing_result_tmp->type = SINGSING_CLOSE;
+			else
+				singsing_result_tmp->type = SINGSING_OPEN;
+			
 			pthread_mutex_lock(&singsing_result_queue_lock);
 
 
@@ -657,7 +666,11 @@ void * singsing_sniff_thread(void *parm)
         source_ip = singsing_get_ip( singsing_device );
         t_in.s_addr = source_ip;
 
-	sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u) and tcp[13] = 18", inet_ntoa( t_in ), singsing_min_port, singsing_max_port);
+	// get REST packet only is necessary
+	if( singsing_scan_mode & SINGSING_SHOW_CLOSED ) 
+		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u)", inet_ntoa( t_in ), singsing_min_port, singsing_max_port);
+	else
+		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u) and tcp[13] = 18", inet_ntoa( t_in ), singsing_min_port, singsing_max_port);
 
 	if(pcap_compile(singsing_descr,&fp, src,0,netp) == -1) {
 

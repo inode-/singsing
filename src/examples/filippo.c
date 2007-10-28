@@ -69,7 +69,7 @@ int main(int argc, char ** argv)
 
 	struct singsing_result_queue * cur_res;
 
-	while((opt = getopt(argc, argv, "i:h:b:c:")) != -1)
+	while((opt = getopt(argc, argv, "i:h:b:c:p:")) != -1)
 	{
 		switch (opt)
 		{

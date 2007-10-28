@@ -87,7 +87,7 @@ int singsing_raw_socket;
 unsigned long singsing_source_ip;
 pthread_t singsing_thread_id[3];
 unsigned long singsing_cur_port = 0;
-int singsing_scan_mode = SINGSING_BASIC_SCAN;
+unsigned int singsing_scan_mode = SINGSING_BASIC_SCAN;
 
 
 // Data lists

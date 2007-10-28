@@ -45,6 +45,7 @@
 /* global variables */
 int host_ports	= 0;
 int show_closed = 0;
+
 // long total_port = 0;
 extern int errno;
 
@@ -83,9 +84,7 @@ int main( int argc, char ** argv )
 				ports = optarg;
 				break;
 			case 'c':
-				show_closed = 1;
-				fprintf(stderr, "\noption -c not implemented yet\n");
-				exit( EXIT_SUCCESS );
+				singsing_set_scanmode( SINGSING_SHOW_CLOSED );
 				break;
 			case 's':
 // 				sleeper = atoi( optarg );
@@ -122,7 +121,11 @@ int main( int argc, char ** argv )
                 cur_res = singsing_get_result();
                 if( cur_res != NULL ) {
                         result.s_addr = ntohl(cur_res->ip);
-                        printf("zucca open %s:%u\n",inet_ntoa( result ), cur_res->port );
+
+			if( cur_res->type == SINGSING_OPEN )
+                        	printf("zucca open %s:%u\n",inet_ntoa( result ), cur_res->port );
+			else
+                        	printf("zucca close %s:%u\n",inet_ntoa( result ), cur_res->port );
 
                         free(cur_res);
                 } else
@@ -207,7 +210,7 @@ void usage( char * argv0 )
 	fprintf( stderr, " -p Ports (ex 22,23,40-50,99)\n");   
 // 	fprintf( stderr, " -t Timeout (Default 5)\n");
 //         fprintf( stderr, " -s Sleep X second after a port\n");
-// 	fprintf( stderr, " -c Display closed ports\n\n");
+ 	fprintf( stderr, " -c Display closed ports\n\n");
 
 	exit( EXIT_FAILURE );
 }
