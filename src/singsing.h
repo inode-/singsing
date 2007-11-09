@@ -1,7 +1,7 @@
 /*****************************************************************************
  * singsing.h is a part of singsing project                                  *
  *                                                                           *
- * http://singsing.sourceforge.net                                           *
+ * http://singsing.woolly-sheep.net                                          *
  *                                                                           *
  * $Id::                                                                  $: *
  *                                                                           *
@@ -39,7 +39,7 @@
 
 #define _SINGSING_H
 
-#define SINGSING_VERSION "0.3"
+#define SINGSING_VERSION "0.4"
 
 #include <stdio.h>
 #include <unistd.h>

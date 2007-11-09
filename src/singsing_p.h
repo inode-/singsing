@@ -1,7 +1,7 @@
 /*****************************************************************************
  * singsing_p.h is a part of singsing project                                *
  *                                                                           *
- * http://singsing.sourceforge.net                                           *
+ * http://singsing.woolly-sheep.net                                          *
  *                                                                           *
  * $Id::                                                                  $: *
  *                                                                           *
