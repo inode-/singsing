@@ -357,10 +357,6 @@ int singsing_init( void )
 
 	srand( time(NULL) );
 
-	singsing_cur_status.total_port = singsing_ports;
-	singsing_cur_status.current_port = 0;
-
-	
 	if( (singsing_raw_socket = socket( AF_INET, SOCK_RAW, IPPROTO_RAW )) < 0 ) {
 		fprintf( stderr, "error in creating raw sockets\n");
 		exit( EXIT_FAILURE );
@@ -418,7 +414,11 @@ int singsing_init( void )
  	fprintf(stderr, "Sleep of every 10 packets: %lu\n", singsing_sleep_band);
 #endif
 	
-	singsing_cur_status.init_time = time( NULL );
+        // fill status struct
+        singsing_cur_status.total_port = singsing_ports * (singsing_end_ip + 1 - singsing_start_ip);
+        singsing_cur_status.current_port = 0;
+        singsing_cur_status.init_time = time(NULL);
+        singsing_cur_status.synps = singsing_synps;
 
 	/* create send syn thread */
         if( pthread_create( &singsing_thread_id[2], NULL, &singsing_send_syn_thread, NULL) != 0 ) {
@@ -481,6 +481,8 @@ void * singsing_send_syn_thread(void *parm)
 
 			singsing_send_syn( singsing_raw_socket,  htonl(tmp_ip), singsing_source_ip, \
 				tmp_port->port);
+
+			singsing_cur_status.current_port++;
 
 			if( c >= 10 ) {
 				//sleep time auto correction
@@ -875,8 +877,9 @@ int singsing_scanisfinished( void )
 void singsing_get_status( struct singsing_status_struct * cur )
 {
 	memcpy( cur, &singsing_cur_status, sizeof( singsing_cur_status ) );
-	cur->current_port = singsing_cur_port * singsing_synps;
-	
+
+	cur->current_time = time(NULL);
+
 	return;
 }
 

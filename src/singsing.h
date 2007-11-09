@@ -88,9 +88,8 @@ struct singsing_status_struct {
 	unsigned long total_port;
 	unsigned long current_port;
 	unsigned long synps;
-	
 	time_t init_time;
-
+	time_t current_time;
 };
 
 // Prototypes

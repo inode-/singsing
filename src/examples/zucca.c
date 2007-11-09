@@ -36,24 +36,25 @@
 
 #include "singsing.h"
 
-#define VERSION "0.3"
+#include <term.h>
 
-// #define DEFAULT_TIMEOUT  	30
-// #define DEFAULT_BANDWIDTH 	15
-
+#define VERSION "0.4"
 
 /* global variables */
 int host_ports	= 0;
 int show_closed = 0;
 
-// long total_port = 0;
 extern int errno;
+struct termios savetty;
+
 
 /* Prototypes */
 int parse_system_service( void );
 void parse_port( char * ports );
 void usage( char * argv0 );
-
+void tty_raw( void );
+void tty_normal( void );
+int getch( void );
 
 int main( int argc, char ** argv )
 {
@@ -62,6 +63,7 @@ int main( int argc, char ** argv )
  	char * ports = NULL;
 
 	struct singsing_result_queue * cur_res;
+	struct singsing_status_struct current_status;
 	struct in_addr result;
 
 	while((opt = getopt(argc, argv, "i:b:p:h:ct:s:")) != -1)
@@ -74,9 +76,6 @@ int main( int argc, char ** argv )
 			case 'b':
 				singsing_set_bandwidth( atoi( optarg ) );
 				break;
-//			case 't':
-// 				timeout = atoi( optarg );
-// 				break;
 			case 'h':
 				singsing_set_scan_host( optarg );
 				break;
@@ -115,7 +114,11 @@ int main( int argc, char ** argv )
 
 	fprintf( stderr, " Starting scan...\n\n");
 
-	singsing_init();
+	if( singsing_init() < 0 ) {
+		usage(argv[0]);
+	}
+
+	tty_raw();
 
         do {
                 cur_res = singsing_get_result();
@@ -123,16 +126,27 @@ int main( int argc, char ** argv )
                         result.s_addr = ntohl(cur_res->ip);
 
 			if( cur_res->type == SINGSING_OPEN )
-                        	printf("zucca open %s:%u\n",inet_ntoa( result ), cur_res->port );
+                        	printf(" zucca open %s:%u\n",inet_ntoa( result ), cur_res->port );
 			else
-                        	printf("zucca close %s:%u\n",inet_ntoa( result ), cur_res->port );
+                        	printf(" zucca close %s:%u\n",inet_ntoa( result ), cur_res->port );
 
                         free(cur_res);
-                } else
+                } else {
                         usleep(300000);
+
+			if( getch() > 0 ) {
+				singsing_get_status(&current_status);
+
+				fprintf(stderr," stats: %lu%% in %.0lf seconds\n", \
+				100 * current_status.current_port / current_status.total_port, \
+				difftime(current_status.current_time, current_status.init_time));
+
+			}
+		}
 
         } while( singsing_scanisfinished() != 2 || cur_res != NULL);
 
+	tty_normal();
 
 	singsing_destroy();	
 
@@ -195,22 +209,45 @@ void parse_port( char * ports )
 
                 return;
         } 
-	
+
 	return;
 }
 
 void usage( char * argv0 )
 {
 	fprintf( stderr, " Usage:\n");
-	fprintf( stderr, "  %s -h <arg> -i <arg> [-b <arg>] [-p <arg>] [-t <arg>] [-s <arg>] [-c]\n\n",argv0);
+	fprintf( stderr, "  %s -h <arg> -i <arg> [-b <arg>] [-p <arg>] [-s <arg>] [-c]\n\n",argv0);
 	fprintf( stderr, " -h Host/s to scan  (ex 192.168.0.0/24)\n");
 	fprintf( stderr, " -i Interface\n");
 	fprintf( stderr, " -b Usable bandwidth in KB (Default 15)\n");
-// 	fprintf( stderr, " -m Mode fast/accurate (Default fast)\n");
 	fprintf( stderr, " -p Ports (ex 22,23,40-50,99)\n");   
-// 	fprintf( stderr, " -t Timeout (Default 5)\n");
-//         fprintf( stderr, " -s Sleep X second after a port\n");
  	fprintf( stderr, " -c Display closed ports\n\n");
 
 	exit( EXIT_FAILURE );
 }
+
+void tty_normal(void)
+{
+        tcsetattr(0, TCSADRAIN, &savetty);
+}
+
+void tty_raw(void)
+{
+	struct termios tty;
+        tcgetattr(0, &savetty);
+        tcgetattr(0, &tty);
+        tty.c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
+        tty.c_cc[VTIME] = 0;
+        tty.c_cc[VMIN] = 0;
+        tcsetattr(0, TCSADRAIN, &tty);
+}
+
+int getch (void)
+{
+	char buf[2];
+        if (read (0, buf, 1)) {
+                return buf[0];
+        }
+        return -1;
+}
+
