@@ -1,5 +1,7 @@
 $Id$
 
+* Added time statistics on zucca
+* Removed all global variables
 * Added show closed port on zucca
 * Fixed -p problem on filippo
 * Added ability to get closed port on singsing engine

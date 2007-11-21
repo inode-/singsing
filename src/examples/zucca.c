@@ -61,12 +61,18 @@ int main( int argc, char ** argv )
 
 	char opt;
  	char * ports = NULL;
+	char buf[200];
 
 	struct singsing_result_queue * cur_res;
 	struct singsing_status_struct current_status;
 	struct in_addr result;
 
 	struct singsing_descriptor fd;
+
+	time_t endtime;
+	time_t cur;
+
+	struct tm ts;
 
 	singsing_create(&fd);
 
@@ -140,15 +146,33 @@ int main( int argc, char ** argv )
 
 			if( getch() > 0 ) {
 				singsing_get_status(&fd, &current_status);
-
-				fprintf(stderr," stats: %lu%% in %.0lf seconds\n", \
+//expected end time 
+//num porta : tot porta = diff : x
+    // Format and print the time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+    //ts = *localtime(&now);
+    //strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+    //printf("%s\n", buf);
+				cur = current_status.init_time;
+				cur += difftime(current_status.current_time, current_status.init_time) * current_status.total_port / current_status.current_port;
+			
+				ts = *localtime(&cur);
+				
+				strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+				
+				fprintf(stderr," stats: %lu%% expected end at %s\n", \
 				100 * current_status.current_port / current_status.total_port, \
-				difftime(current_status.current_time, current_status.init_time));
+				buf);
 
 			}
 		}
 
         } while( singsing_scanisfinished(&fd) != 2 || cur_res != NULL);
+
+	endtime = time( NULL );
+	
+	singsing_get_status(&fd, &current_status);
+
+	fprintf( stderr, " %lu ports scanned in %.0lf seconds\n", current_status.total_port, difftime(endtime, current_status.init_time));
 
 	tty_normal();
 
