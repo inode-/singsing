@@ -146,12 +146,7 @@ int main( int argc, char ** argv )
 
 			if( getch() > 0 ) {
 				singsing_get_status(&fd, &current_status);
-//expected end time 
-//num porta : tot porta = diff : x
-    // Format and print the time, "ddd yyyy-mm-dd hh:mm:ss zzz"
-    //ts = *localtime(&now);
-    //strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
-    //printf("%s\n", buf);
+
 				cur = current_status.init_time;
 				cur += difftime(current_status.current_time, current_status.init_time) * current_status.total_port / current_status.current_port;
 			

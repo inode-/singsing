@@ -183,7 +183,8 @@ int net_connect( char * host, int port)
 {
 	int sd;
 	struct sockaddr_in servAddr;
-	int flags, flags_old, retval, sock_len;
+	int flags, flags_old, retval;	
+	unsigned int sock_len;
 	struct sockaddr_in sin;
 	struct timeval tv;
 	fd_set rfds;
