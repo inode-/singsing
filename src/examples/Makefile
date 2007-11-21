@@ -24,4 +24,5 @@ mac: zucca.c filippo.c ssh_scan.c ../singsing.c ../singsing.h ../singsing_p.h
 	gcc -o filippo filippo.c ../singsing.c -I../ -DMAC -lpcap -lpthread -Wall
 	gcc -o telnet_grabber telnet_grabber.c ../singsing.c -I../ -DMAC -lpcap -lpthread -Wall
 
-
+clean:
+	rm -rf zucca ssh_scan filippo telnet_grabber

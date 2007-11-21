@@ -48,14 +48,13 @@ void singsing_packet_rec(u_char *args,const struct pcap_pkthdr* pkthdr, \
 	const u_char* packet);
 void * singsing_processing_thread(void *parm);
 void * singsing_send_syn_thread(void *parm);
-int singsing_send_syn( int sock, long dest_ip , long source_ip, long port);
+int singsing_send_syn( int sock, long dest_ip , long source_ip, long port, struct singsing_descriptor * fd);
 void * singsing_sniff_thread(void *parm);
 void singsing_set_thread_priority( int priority );
-unsigned long singsing_get_ip(char* interface) ;
-int singsing_bind_port( unsigned long ip );
+unsigned long singsing_get_ip(struct singsing_descriptor * fd,char* interface) ;
+int singsing_bind_port( struct singsing_descriptor * fd,unsigned long ip );
 
 
-struct singsing_status_struct singsing_cur_status;
 
 struct singsing_port_list {
 	long port;
@@ -70,38 +69,7 @@ struct singsing_packet_queue {
 
 
 // Global variables
-int singsing_band = 5;
-char * singsing_device	= NULL;
-unsigned long singsing_start_ip = 0;
-unsigned long singsing_end_ip = 0;
-unsigned int singsing_min_port = 0;
-unsigned int singsing_max_port = 0;
-int singsing_socket[500];
-pcap_t * singsing_descr	= NULL;
-u_short singsing_ipid	= 0;
-int singsing_finished 	= 0;
-unsigned int singsing_ports = 0;
-unsigned long singsing_sleep_band = 0;
-unsigned long singsing_synps;
-int singsing_raw_socket;
-unsigned long singsing_source_ip;
-pthread_t singsing_thread_id[3];
-unsigned long singsing_cur_port = 0;
-unsigned int singsing_scan_mode = SINGSING_BASIC_SCAN;
 
-
-// Data lists
-struct singsing_port_list * singsing_first_port = NULL;
-struct singsing_port_list * singsing_last_port = NULL;
-
-struct singsing_result_queue * singsing_first_result = NULL;
-struct singsing_result_queue * singsing_last_result = NULL;
-pthread_mutex_t singsing_result_queue_lock = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_mutex_t packet_queue_lock = PTHREAD_MUTEX_INITIALIZER;
-
-struct singsing_packet_queue * singsing_first_packet = NULL;
-struct singsing_packet_queue * singsing_last_packet = NULL;
 
 // Fixing solaris
 #ifdef SOLARIS

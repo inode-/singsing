@@ -49,8 +49,8 @@ struct termios savetty;
 
 
 /* Prototypes */
-int parse_system_service( void );
-void parse_port( char * ports );
+int parse_system_service( struct singsing_descriptor * fd );
+void parse_port( struct singsing_descriptor * fd, char * ports );
 void usage( char * argv0 );
 void tty_raw( void );
 void tty_normal( void );
@@ -66,24 +66,28 @@ int main( int argc, char ** argv )
 	struct singsing_status_struct current_status;
 	struct in_addr result;
 
+	struct singsing_descriptor fd;
+
+	singsing_create(&fd);
+
 	while((opt = getopt(argc, argv, "i:b:p:h:ct:s:")) != -1)
 	{
 		switch (opt)
                 {
 			case 'i':
-				singsing_set_scan_interface( optarg );
+				singsing_set_scan_interface( &fd, optarg );
 				break;
 			case 'b':
-				singsing_set_bandwidth( atoi( optarg ) );
+				singsing_set_bandwidth( &fd, atoi( optarg ) );
 				break;
 			case 'h':
-				singsing_set_scan_host( optarg );
+				singsing_set_scan_host( &fd, optarg );
 				break;
 			case 'p':
 				ports = optarg;
 				break;
 			case 'c':
-				singsing_set_scanmode( SINGSING_SHOW_CLOSED );
+				singsing_set_scanmode( &fd, SINGSING_SHOW_CLOSED );
 				break;
 			case 's':
 // 				sleeper = atoi( optarg );
@@ -101,27 +105,27 @@ int main( int argc, char ** argv )
 	host_ports = 0;
 
 	if( ports != NULL ) 
-		parse_port( ports );
+		parse_port( &fd, ports );
 	else
-		parse_system_service();
+		parse_system_service( &fd );
 
 	fprintf(stderr, " Ports per host  : %u\n", host_ports);
 
 
-	singsing_set_scanmode( SINGSING_NODUP_SCAN );
-	singsing_set_scanmode( SINGSING_SEGMENT_SCAN );
+	singsing_set_scanmode( &fd, SINGSING_NODUP_SCAN );
+	singsing_set_scanmode( &fd, SINGSING_SEGMENT_SCAN );
 	 
 
 	fprintf( stderr, " Starting scan...\n\n");
 
-	if( singsing_init() < 0 ) {
+	if( singsing_init(&fd) < 0 ) {
 		usage(argv[0]);
 	}
 
 	tty_raw();
 
         do {
-                cur_res = singsing_get_result();
+                cur_res = singsing_get_result(&fd);
                 if( cur_res != NULL ) {
                         result.s_addr = ntohl(cur_res->ip);
 
@@ -135,7 +139,7 @@ int main( int argc, char ** argv )
                         usleep(300000);
 
 			if( getch() > 0 ) {
-				singsing_get_status(&current_status);
+				singsing_get_status(&fd, &current_status);
 
 				fprintf(stderr," stats: %lu%% in %.0lf seconds\n", \
 				100 * current_status.current_port / current_status.total_port, \
@@ -144,25 +148,25 @@ int main( int argc, char ** argv )
 			}
 		}
 
-        } while( singsing_scanisfinished() != 2 || cur_res != NULL);
+        } while( singsing_scanisfinished(&fd) != 2 || cur_res != NULL);
 
 	tty_normal();
 
-	singsing_destroy();	
+	singsing_destroy(&fd);	
 
 	exit( EXIT_SUCCESS );
 }
 
 
 /* Parse /etc/services */
-int parse_system_service( void )
+int parse_system_service( struct singsing_descriptor * fd )
 {
 	struct servent * tmp;
 
 	while( ( tmp = getservent()) != NULL ) {
 		if( strcmp( tmp->s_proto, "tcp") == 0 ) {
 
-			singsing_add_port( ntohs(tmp->s_port) );
+			singsing_add_port( fd, ntohs(tmp->s_port) );
 
 			host_ports++;
 		}
@@ -174,7 +178,7 @@ int parse_system_service( void )
 } 
 
 /* Parse port command line */
-void parse_port( char * ports )
+void parse_port( struct singsing_descriptor * fd, char * ports )
 {
 	char * tmp;
 	long port;
@@ -183,8 +187,8 @@ void parse_port( char * ports )
 		*tmp = 0;
 		tmp++;
 
-		parse_port( ports );
-		parse_port( tmp );
+		parse_port( fd, ports );
+		parse_port( fd, tmp );
 
 		return; 
 	}
@@ -198,13 +202,13 @@ void parse_port( char * ports )
 
 		for( i = atol( ports ); i <= atol(tmp); i++) {
 			snprintf( number, sizeof(number), "%d", i);
-			parse_port( number );
+			parse_port( fd, number );
 		}
 		return;
 	}
 
         if( (port = atol(ports)) > 0 ) {
-		singsing_add_port( port );
+		singsing_add_port( fd, port );
                 host_ports++;
 
                 return;
@@ -216,7 +220,7 @@ void parse_port( char * ports )
 void usage( char * argv0 )
 {
 	fprintf( stderr, " Usage:\n");
-	fprintf( stderr, "  %s -h <arg> -i <arg> [-b <arg>] [-p <arg>] [-s <arg>] [-c]\n\n",argv0);
+	fprintf( stderr, "  %s -h <arg> -i <arg> [-b <arg>] [-p <arg>] [-c]\n\n",argv0);
 	fprintf( stderr, " -h Host/s to scan  (ex 192.168.0.0/24)\n");
 	fprintf( stderr, " -i Interface\n");
 	fprintf( stderr, " -b Usable bandwidth in KB (Default 15)\n");

@@ -92,17 +92,54 @@ struct singsing_status_struct {
 	time_t current_time;
 };
 
+struct singsing_descriptor {
+	int singsing_band;
+	char * singsing_device;
+	unsigned long singsing_start_ip;
+	unsigned long singsing_end_ip;
+	unsigned int singsing_min_port;
+	unsigned int singsing_max_port;
+	int singsing_socket[500];
+	pcap_t * singsing_descr;
+	u_short singsing_ipid;
+	int singsing_finished;
+	unsigned int singsing_ports;
+	unsigned long singsing_sleep_band;
+	unsigned long singsing_synps;
+	int singsing_raw_socket;
+	unsigned long singsing_source_ip;
+	pthread_t singsing_thread_id[3];
+	unsigned long singsing_cur_port;
+	unsigned int singsing_scan_mode;
+
+	// Data lists
+	struct singsing_port_list * singsing_first_port;
+	struct singsing_port_list * singsing_last_port;
+
+	struct singsing_result_queue * singsing_first_result;
+	struct singsing_result_queue * singsing_last_result;
+	pthread_mutex_t singsing_result_queue_lock ;
+
+	pthread_mutex_t packet_queue_lock;
+
+	struct singsing_packet_queue * singsing_first_packet;
+	struct singsing_packet_queue * singsing_last_packet;
+
+	struct singsing_status_struct singsing_cur_status;
+};
+
 // Prototypes
-int singsing_add_port( unsigned int port );
-int singsing_set_scan_interface( char * interface );
-int singsing_set_scan_host( char * host);
-int singsing_init( void );
-void singsing_destroy( void );
-int singsing_scanisfinished( void );
-void singsing_set_bandwidth(int a);
-void singsing_get_status( struct singsing_status_struct * cur );
-void singsing_set_scanmode( int a );
-struct singsing_result_queue * singsing_get_result( void );
+int singsing_add_port( struct singsing_descriptor * fd, unsigned int port );
+int singsing_set_scan_interface( struct singsing_descriptor * fd, char * interface );
+int singsing_set_scan_host( struct singsing_descriptor * fd, char * host);
+int singsing_init( struct singsing_descriptor * fd );
+void singsing_destroy( struct singsing_descriptor * fd );
+void singsing_create( struct singsing_descriptor * fd );
+int singsing_scanisfinished( struct singsing_descriptor * fd );
+void singsing_set_bandwidth( struct singsing_descriptor * fd, int a);
+void singsing_get_status( struct singsing_descriptor * fd, struct singsing_status_struct * cur );
+void singsing_set_scanmode( struct singsing_descriptor * fd, int a );
+struct singsing_result_queue * singsing_get_result( struct singsing_descriptor * fd );
 
 #endif 
 

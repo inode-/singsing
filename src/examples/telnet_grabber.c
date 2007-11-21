@@ -37,7 +37,6 @@
 
 #include "singsing.h"
 
-#define NAME "socks"
 #define VERSION "0.1"
 
 #define PORT	23
@@ -60,6 +59,10 @@ int main(int argc, char ** argv)
 
 	struct singsing_result_queue * cur_res;
 
+        struct singsing_descriptor fd;
+
+        singsing_create(&fd);
+
 	while((opt = getopt(argc, argv, "i:h:b:")) != -1)
 	{
 		switch (opt)
@@ -81,26 +84,26 @@ int main(int argc, char ** argv)
 	if( target == NULL || device == NULL )
 		usage( argv[0] );
 
-	singsing_set_scan_interface( device );
+	singsing_set_scan_interface( &fd, device );
 
-	singsing_set_bandwidth( band );
+	singsing_set_bandwidth( &fd, band );
 
-	singsing_set_scan_host( target );
+	singsing_set_scan_host( &fd, target );
 
-	singsing_add_port( PORT );
+	singsing_add_port( &fd, PORT );
 
-        singsing_set_scanmode( SINGSING_NODUP_SCAN );
+        singsing_set_scanmode( &fd, SINGSING_NODUP_SCAN );
 
-        singsing_set_scanmode( SINGSING_SEGMENT_SCAN );
+        singsing_set_scanmode( &fd, SINGSING_SEGMENT_SCAN );
 
 	fprintf( stderr, "Starting scan...\n");
 
 	start_time = time(NULL);
 
-	singsing_init();
+	singsing_init( &fd );
 
 	do {
-		cur_res = singsing_get_result();
+		cur_res = singsing_get_result( &fd );
 		if( cur_res != NULL ) {
 			result.s_addr = ntohl(cur_res->ip);
 
@@ -114,14 +117,14 @@ int main(int argc, char ** argv)
 		} else
                 	usleep(300000);
  
-	} while( singsing_scanisfinished() != 2 || cur_res != NULL);
+	} while( singsing_scanisfinished( &fd ) != 2 || cur_res != NULL);
 
 
         end_time = time(NULL);
 
         fprintf( stderr, "\n Scan end in %.0lf seconds\n\n", difftime(end_time, start_time));
 
-        singsing_destroy();
+        singsing_destroy( &fd );
 
 	return 0;
 }

@@ -87,7 +87,7 @@ unsigned short singsing_in_cksum_tcp(int src, int dst, unsigned short *addr, int
 
 
 /* Hey, remember to use free! */
-struct singsing_result_queue * singsing_get_result( void ) {
+struct singsing_result_queue * singsing_get_result( struct singsing_descriptor * fd ) {
 
 	struct singsing_result_queue * cur = NULL;
 	struct singsing_result_queue * cur_old = NULL;
@@ -96,12 +96,12 @@ struct singsing_result_queue * singsing_get_result( void ) {
 
 	cur_time = time(NULL);
 
-	pthread_mutex_lock(&singsing_result_queue_lock);
+	pthread_mutex_lock(&fd->singsing_result_queue_lock);
 
-	cur = singsing_first_result;
+	cur = fd->singsing_first_result;
 	cur_old = NULL;
 
-	if( singsing_scan_mode & SINGSING_NODUP_SCAN ) {
+	if( fd->singsing_scan_mode & SINGSING_NODUP_SCAN ) {
 		while( cur != NULL ) {
 
 			if( difftime( cur_time, cur->rec_time) > SINGSING_TIMEOUT )
@@ -117,25 +117,25 @@ struct singsing_result_queue * singsing_get_result( void ) {
 		if( cur_old != NULL )
 			cur_old->next = cur->next;
 
-		if( cur == singsing_first_result ) 
-			singsing_first_result = singsing_first_result->next;
+		if( cur == fd->singsing_first_result ) 
+			fd->singsing_first_result = fd->singsing_first_result->next;
 
-		if( cur == singsing_last_result ) 
-			singsing_last_result = cur_old;
+		if( cur == fd->singsing_last_result ) 
+			fd->singsing_last_result = cur_old;
 
-		if( singsing_first_result == NULL )
-			singsing_last_result = NULL;
+		if( fd->singsing_first_result == NULL )
+			fd->singsing_last_result = NULL;
 
 	}
 
-	pthread_mutex_unlock(&singsing_result_queue_lock);
+	pthread_mutex_unlock(&fd->singsing_result_queue_lock);
 
 	return cur;
 }
 
 
 // Add port to scan
-int singsing_add_port( unsigned int port )
+int singsing_add_port( struct singsing_descriptor * fd, unsigned int port )
 {
 	struct singsing_port_list * new_port;
 
@@ -145,15 +145,15 @@ int singsing_add_port( unsigned int port )
 	new_port->port = port;
 	new_port->next = NULL;
 
-	if( singsing_first_port == NULL ) {
-		singsing_first_port = new_port;
-		singsing_last_port = singsing_first_port;
+	if( fd->singsing_first_port == NULL ) {
+		fd->singsing_first_port = new_port;
+		fd->singsing_last_port = fd->singsing_first_port;
 	} else {
-		singsing_last_port->next = new_port;
-		singsing_last_port = new_port;
+		fd->singsing_last_port->next = new_port;
+		fd->singsing_last_port = new_port;
 	}
 
-	singsing_ports++;
+	fd->singsing_ports++;
 
 	return 0;
 }
@@ -164,6 +164,8 @@ void singsing_packet_rec(u_char *args,const struct pcap_pkthdr* pkthdr,const u_c
 {
         struct singsing_packet_queue * new_packet_queue; 
         u_char * new_packet;
+
+	struct singsing_descriptor * fd = (struct singsing_descriptor *)args;
 
         new_packet_queue = malloc( sizeof(struct singsing_packet_queue) );
 
@@ -176,17 +178,17 @@ void singsing_packet_rec(u_char *args,const struct pcap_pkthdr* pkthdr,const u_c
 
         memcpy( new_packet, packet, pkthdr->caplen);
 
-        pthread_mutex_lock(&packet_queue_lock);
+        pthread_mutex_lock(&fd->packet_queue_lock);
 
-        if( singsing_last_packet != NULL ) {
-                singsing_last_packet -> next = new_packet_queue;
-                singsing_last_packet = new_packet_queue;
+        if( fd->singsing_last_packet != NULL ) {
+                fd->singsing_last_packet -> next = new_packet_queue;
+                fd->singsing_last_packet = new_packet_queue;
         } else {
-                singsing_last_packet = new_packet_queue;
-                singsing_first_packet = new_packet_queue;
+                fd->singsing_last_packet = new_packet_queue;
+                fd->singsing_first_packet = new_packet_queue;
         }
 
-        pthread_mutex_unlock(&packet_queue_lock);
+        pthread_mutex_unlock(&fd->packet_queue_lock);
 }
 
 /* Thread processing received packet */
@@ -197,6 +199,8 @@ void * singsing_processing_thread(void *parm)
 	struct singsing_result_queue * singsing_result_tmp = NULL;
 	struct singsing_result_queue * singsing_result_scan = NULL;
         int lltype;
+
+	struct singsing_descriptor * fd = parm;
 
 	struct ip ip_p;
 	struct tcphdr tcp_p;
@@ -210,28 +214,28 @@ void * singsing_processing_thread(void *parm)
                         free( tmp_queue );
                         tmp_queue = NULL;
                 }
-                pthread_mutex_lock(&packet_queue_lock);
+                pthread_mutex_lock(&fd->packet_queue_lock);
 
-                if( singsing_first_packet == NULL ) {
-                        pthread_mutex_unlock(&packet_queue_lock);
+                if( fd->singsing_first_packet == NULL ) {
+                        pthread_mutex_unlock(&fd->packet_queue_lock);
                         usleep( 10000 );
-                        if( singsing_finished == 1 ) {
-				singsing_finished = 2;
+                        if( fd->singsing_finished == 1 ) {
+				fd->singsing_finished = 2;
                                 return NULL;
                         }
                         continue;
                 } 
 
-                tmp_queue = singsing_first_packet;
+                tmp_queue = fd->singsing_first_packet;
 
-                singsing_first_packet = singsing_first_packet->next;
+                fd->singsing_first_packet = fd->singsing_first_packet->next;
 
-                if( singsing_first_packet == NULL )
-                        singsing_last_packet = NULL;
+                if( fd->singsing_first_packet == NULL )
+                        fd->singsing_last_packet = NULL;
 
-                pthread_mutex_unlock(&packet_queue_lock);
+                pthread_mutex_unlock(&fd->packet_queue_lock);
 
-                lltype = pcap_datalink(singsing_descr);
+                lltype = pcap_datalink(fd->singsing_descr);
 
                 switch(lltype) {
                         case DLT_EN10MB:
@@ -262,7 +266,7 @@ void * singsing_processing_thread(void *parm)
 
                 // Try to fix with PUSH FLASG?
 		// If the packet it's an ACK we fill the result queue
-		if( ((tcp_p.th_flags & TH_RST) && (singsing_scan_mode & SINGSING_SHOW_CLOSED)) || 
+		if( ((tcp_p.th_flags & TH_RST) && (fd->singsing_scan_mode & SINGSING_SHOW_CLOSED)) || 
 			( (tcp_p.th_flags & TH_ACK) && !(tcp_p.th_flags & TH_RST) )){
 
 #ifdef DEBUG
@@ -287,11 +291,11 @@ else
 			else
 				singsing_result_tmp->type = SINGSING_OPEN;
 			
-			pthread_mutex_lock(&singsing_result_queue_lock);
+			pthread_mutex_lock(&fd->singsing_result_queue_lock);
 
 
-			if( singsing_scan_mode & SINGSING_NODUP_SCAN ) {
-				singsing_result_scan = singsing_first_result;
+			if( fd->singsing_scan_mode & SINGSING_NODUP_SCAN ) {
+				singsing_result_scan = fd->singsing_first_result;
 
 #ifdef DEBUG
 fprintf(stderr, " scanning for dups\n");
@@ -315,12 +319,12 @@ fprintf(stderr, " dup found\n");
 			// Adding result structure to the queue
 			if( singsing_result_tmp != NULL ) {
 
-				if( singsing_last_result != NULL ) 
-					singsing_last_result->next = singsing_result_tmp;
+				if( fd->singsing_last_result != NULL ) 
+					fd->singsing_last_result->next = singsing_result_tmp;
 				else
-					singsing_first_result = singsing_result_tmp;
+					fd->singsing_first_result = singsing_result_tmp;
 
-				singsing_last_result = singsing_result_tmp;
+				fd->singsing_last_result = singsing_result_tmp;
 
 #ifdef DEBUG
 fprintf(stderr, " packet insered in result queue\n");
@@ -329,7 +333,7 @@ fprintf(stderr, " packet insered in result queue\n");
 
 			} 
 
-			pthread_mutex_unlock(&singsing_result_queue_lock);
+			pthread_mutex_unlock(&fd->singsing_result_queue_lock);
 
                 }
 
@@ -339,30 +343,33 @@ fprintf(stderr, " packet insered in result queue\n");
 }
 
 
-int singsing_init( void )
+int singsing_init( struct singsing_descriptor * fd )
 {
 	int on = 1;
 	
 	struct timeval first,second;
 	unsigned long k;
 
-	singsing_bind_port(1);
+	singsing_bind_port(fd, 1);
 
 	#ifdef SOLARIS
 	pthread_setconcurrency( 4 );
 	#endif 
 
-	if(singsing_start_ip == 0 || singsing_end_ip == 0 )
+	if(fd->singsing_start_ip == 0 || fd->singsing_end_ip == 0 )
 		return -1;
+
+	if( fd->singsing_device == NULL )
+		return -3;
 
 	srand( time(NULL) );
 
-	if( (singsing_raw_socket = socket( AF_INET, SOCK_RAW, IPPROTO_RAW )) < 0 ) {
+	if( (fd->singsing_raw_socket = socket( AF_INET, SOCK_RAW, IPPROTO_RAW )) < 0 ) {
 		fprintf( stderr, "error in creating raw sockets\n");
 		exit( EXIT_FAILURE );
 	}
 
-        if (setsockopt(singsing_raw_socket,IPPROTO_IP,IP_HDRINCL,(char *)&on,sizeof(on)) < 0) 
+        if (setsockopt(fd->singsing_raw_socket,IPPROTO_IP,IP_HDRINCL,(char *)&on,sizeof(on)) < 0) 
         {
                 perror("setsockopt: IP_HDRINCL");
                 exit(1);
@@ -370,13 +377,13 @@ int singsing_init( void )
 
 
 	/* create sniffing thread */
-	if( pthread_create( &singsing_thread_id[0], NULL, &singsing_sniff_thread, NULL) != 0 ) {
+	if( pthread_create( &fd->singsing_thread_id[0], NULL, &singsing_sniff_thread, fd) != 0 ) {
 		fprintf(stderr, "Can't create sniffing thread\n");
 		exit( EXIT_FAILURE );
         }
 
 	/* create processin thread */
-        if( pthread_create( &singsing_thread_id[1], NULL, &singsing_processing_thread, NULL) != 0 ) {
+        if( pthread_create( &fd->singsing_thread_id[1], NULL, &singsing_processing_thread, fd) != 0 ) {
                 fprintf(stderr, "Can't create processing thread\n");
                 exit( EXIT_FAILURE );
         }
@@ -384,44 +391,44 @@ int singsing_init( void )
 	// Waiting for thread creation
 	sleep(1);
 
-	singsing_source_ip = singsing_get_ip( singsing_device );
+	fd->singsing_source_ip = singsing_get_ip( fd, fd->singsing_device );
 
-	singsing_synps = (singsing_band * 1024) / SYN_SIZE;
+	fd->singsing_synps = (fd->singsing_band * 1024) / SYN_SIZE;
 
-	singsing_cur_status.synps = singsing_synps;
+	fd->singsing_cur_status.synps = fd->singsing_synps;
 
 	// Testing sending syn timing
 
 #ifdef DEBUG	
-	fprintf(stderr, " SYN: %lu host to scan on %u ports. AVG= %lu syn/s\n", singsing_end_ip \
-		- singsing_start_ip, singsing_ports, singsing_synps);
-	fprintf(stderr, " SYN: min port: %u max port: %u\n", singsing_min_port, singsing_max_port);
+	fprintf(stderr, " SYN: %lu host to scan on %u ports. AVG= %lu syn/s\n", fd->singsing_end_ip \
+		- fd->singsing_start_ip, fd->singsing_ports, fd->singsing_synps);
+	fprintf(stderr, " SYN: min port: %u max port: %u\n", fd->singsing_min_port, fd->singsing_max_port);
 #endif
 	
 	gettimeofday( &first, NULL);
 
-	for( k=0 ; k<singsing_synps ;k++ ) {
-                singsing_send_syn( singsing_raw_socket,  singsing_source_ip, singsing_source_ip , 22 );
+	for( k=0 ; k<fd->singsing_synps ;k++ ) {
+                singsing_send_syn( fd->singsing_raw_socket,  fd->singsing_source_ip, fd->singsing_source_ip , 22, fd);
 	}	
 
 	gettimeofday( &second, NULL);
 
-	singsing_sleep_band = (second.tv_sec * 1000000 + second.tv_usec) - (first.tv_sec * 1000000 + first.tv_usec); 
+	fd->singsing_sleep_band = (second.tv_sec * 1000000 + second.tv_usec) - (first.tv_sec * 1000000 + first.tv_usec); 
 	
-	singsing_sleep_band = (1000000 - singsing_sleep_band) / (singsing_synps/10);
+	fd->singsing_sleep_band = (1000000 - fd->singsing_sleep_band) / (fd->singsing_synps/10);
 
 #ifdef DEBUG
- 	fprintf(stderr, "Sleep of every 10 packets: %lu\n", singsing_sleep_band);
+ 	fprintf(stderr, "Sleep of every 10 packets: %lu\n", fd->singsing_sleep_band);
 #endif
 	
         // fill status struct
-        singsing_cur_status.total_port = singsing_ports * (singsing_end_ip + 1 - singsing_start_ip);
-        singsing_cur_status.current_port = 0;
-        singsing_cur_status.init_time = time(NULL);
-        singsing_cur_status.synps = singsing_synps;
+        fd->singsing_cur_status.total_port = fd->singsing_ports * (fd->singsing_end_ip + 1 - fd->singsing_start_ip);
+        fd->singsing_cur_status.current_port = 0;
+        fd->singsing_cur_status.init_time = time(NULL);
+        fd->singsing_cur_status.synps = fd->singsing_synps;
 
 	/* create send syn thread */
-        if( pthread_create( &singsing_thread_id[2], NULL, &singsing_send_syn_thread, NULL) != 0 ) {
+        if( pthread_create( &fd->singsing_thread_id[2], NULL, &singsing_send_syn_thread, fd) != 0 ) {
                 fprintf(stderr, "Can't create send_syn thread\n");
                 exit( EXIT_FAILURE );
         }
@@ -441,6 +448,7 @@ void * singsing_send_syn_thread(void *parm)
 	struct timeval first;
 	struct timeval second;
 
+	struct singsing_descriptor * fd = parm;
 
 
 #ifdef DEBUG
@@ -452,42 +460,42 @@ void * singsing_send_syn_thread(void *parm)
 
 #endif
 
-	if( singsing_scan_mode & SINGSING_SEGMENT_SCAN )
-		passo = (singsing_end_ip - singsing_start_ip) / singsing_synps;
+	if( fd->singsing_scan_mode & SINGSING_SEGMENT_SCAN )
+		passo = (fd->singsing_end_ip - fd->singsing_start_ip) / fd->singsing_synps;
 
 	if( passo == 0) 
 		passo = 1;
 
 #ifdef DEBUG
-	if( singsing_scan_mode & SINGSING_SEGMENT_SCAN )
+	if( fd->singsing_scan_mode & SINGSING_SEGMENT_SCAN )
 		fprintf(stderr, "passo scan as been set to: %lu\n",passo);
 #endif 
 
 
-	singsing_cur_status.init_time = time( NULL );
+	fd->singsing_cur_status.init_time = time( NULL );
 	
-	tmp_port = singsing_first_port;
+	tmp_port = fd->singsing_first_port;
 
 	gettimeofday( &first, NULL);
-	usleep( singsing_sleep_band );
+	usleep( fd->singsing_sleep_band );
 
 	while( tmp_port != NULL ) {
 
-		tmp_ip = singsing_start_ip;
+		tmp_ip = fd->singsing_start_ip;
 
 		start_count = 1;
 
-		while( tmp_ip<= singsing_end_ip ) {
+		while( tmp_ip<= fd->singsing_end_ip ) {
 
-			singsing_send_syn( singsing_raw_socket,  htonl(tmp_ip), singsing_source_ip, \
-				tmp_port->port);
+			singsing_send_syn( fd->singsing_raw_socket,  htonl(tmp_ip), fd->singsing_source_ip, \
+				tmp_port->port, fd);
 
-			singsing_cur_status.current_port++;
+			fd->singsing_cur_status.current_port++;
 
 			if( c >= 10 ) {
 				//sleep time auto correction
 				long messo, sleepb;
-				sleepb = singsing_sleep_band;
+				sleepb = fd->singsing_sleep_band;
 				gettimeofday( &second, NULL);
 
 				messo = (second.tv_sec * 1000000 + second.tv_usec) - (first.tv_sec * 1000000 + first.tv_usec);
@@ -498,14 +506,14 @@ void * singsing_send_syn_thread(void *parm)
 //sleep(1);
 
 #endif
-				if( sleepb - (messo-1000000/((long)singsing_synps/10)) < 0 ){
-					singsing_sleep_band = 10;
+				if( sleepb - (messo-1000000/((long)fd->singsing_synps/10)) < 0 ){
+					fd->singsing_sleep_band = 10;
 				 } else {
-					singsing_sleep_band -= messo-1000000/(singsing_synps/10);
+					fd->singsing_sleep_band -= messo-1000000/(fd->singsing_synps/10);
 				}
 
 				gettimeofday( &first, NULL);
-				usleep( singsing_sleep_band );
+				usleep( fd->singsing_sleep_band );
 				c = 0;
 				
 			} else
@@ -513,14 +521,14 @@ void * singsing_send_syn_thread(void *parm)
 
 			tmp_ip += passo;
 
-			if( singsing_scan_mode & SINGSING_SEGMENT_SCAN && tmp_ip > singsing_end_ip) {
+			if( fd->singsing_scan_mode & SINGSING_SEGMENT_SCAN && tmp_ip > fd->singsing_end_ip) {
 	
-				tmp_ip = singsing_start_ip + start_count;
+				tmp_ip = fd->singsing_start_ip + start_count;
 
 				start_count ++;
 				// in this case we have scanned all ip
-				if( tmp_ip == singsing_start_ip + passo )
-					tmp_ip = singsing_end_ip + 1;
+				if( tmp_ip == fd->singsing_start_ip + passo )
+					tmp_ip = fd->singsing_end_ip + 1;
 			}
 		}
 	        tmp_port = tmp_port->next;
@@ -532,13 +540,13 @@ void * singsing_send_syn_thread(void *parm)
         end_time = time(NULL);
 
 	fprintf( stderr, "\n SYN: %lu syn sent in %.0lf seconds, AVG= %.0lf syn/s\n\n", \
-		(singsing_end_ip - singsing_start_ip)*singsing_ports,difftime(end_time, start_time), \
-		(singsing_end_ip - singsing_start_ip)*singsing_ports/difftime(end_time, start_time));
+		(fd->singsing_end_ip - fd->singsing_start_ip)*fd->singsing_ports,difftime(end_time, start_time), \
+		(fd->singsing_end_ip - fd->singsing_start_ip)*fd->singsing_ports/difftime(end_time, start_time));
 #endif
 
 	sleep( SINGSING_TIMEOUT + 15 );	
 
-	singsing_finished = 1;
+	fd->singsing_finished = 1;
 	// End sniffing thread
 
 	return NULL;
@@ -547,7 +555,7 @@ void * singsing_send_syn_thread(void *parm)
 
 
 /* Send syn packet */
-int singsing_send_syn( int sock, long dest_ip , long source_ip, long port) 
+int singsing_send_syn( int sock, long dest_ip , long source_ip, long port, struct singsing_descriptor * fd) 
 {
         char * packet;
 
@@ -568,7 +576,7 @@ int singsing_send_syn( int sock, long dest_ip , long source_ip, long port)
         pkt_ip = (struct ip *) packet;
         pkt_tcp = (struct tcphdr *) (packet + sizeof( struct ip ));
 	
-	pkt_tcp->th_sport = htons( singsing_min_port + (498.0*rand()/(RAND_MAX+1.0)) );
+	pkt_tcp->th_sport = htons( fd->singsing_min_port + (498.0*rand()/(RAND_MAX+1.0)) );
 
         pkt_tcp->th_dport = htons( port );
 	pkt_tcp->th_seq = htons( 1+(int) (65000.0*rand()/(RAND_MAX+1.0)) );
@@ -600,10 +608,10 @@ int singsing_send_syn( int sock, long dest_ip , long source_ip, long port)
 	#endif
 	//pkt_ip->ip_len = sizeof( struct ip ) + sizeof( struct tcphdr);
 
-	if( singsing_ipid > 65000 )
-		singsing_ipid = 0;
-	singsing_ipid++;
-	pkt_ip->ip_id = singsing_ipid;
+	if( fd->singsing_ipid > 65000 )
+		fd->singsing_ipid = 0;
+	fd->singsing_ipid++;
+	pkt_ip->ip_id = fd->singsing_ipid;
 	pkt_ip->ip_off = 0;
 	pkt_ip->ip_ttl = 100;
 	pkt_ip->ip_p = IPPROTO_TCP ;
@@ -651,41 +659,43 @@ void * singsing_sniff_thread(void *parm)
 	long source_ip;
 	struct in_addr t_in;
 
+	struct singsing_descriptor * fd = parm;
+
 	// XXX aumentare la priorità del processo in modo da non perdersi nulla
 // 	singsing_set_thread_priority( 99 );
 
-        if( pcap_lookupnet(singsing_device,&netp,&maskp,errbuf) < 0 ) {
+        if( pcap_lookupnet(fd->singsing_device,&netp,&maskp,errbuf) < 0 ) {
                 fprintf(stderr, "%s\n", errbuf);
                 exit( EXIT_FAILURE );
         }
 
-        if( (singsing_descr = pcap_open_live(singsing_device,BUFSIZ,1,1000,errbuf)) == NULL) {
+        if( (fd->singsing_descr = pcap_open_live(fd->singsing_device,BUFSIZ,1,1000,errbuf)) == NULL) {
         	fprintf(stderr, "%s\n", errbuf);
                 exit( EXIT_FAILURE );
 
         }
 
-        source_ip = singsing_get_ip( singsing_device );
+        source_ip = singsing_get_ip( fd, fd->singsing_device );
         t_in.s_addr = source_ip;
 
 	// get REST packet only is necessary
-	if( singsing_scan_mode & SINGSING_SHOW_CLOSED ) 
-		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u)", inet_ntoa( t_in ), singsing_min_port, singsing_max_port);
+	if( fd->singsing_scan_mode & SINGSING_SHOW_CLOSED ) 
+		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u)", inet_ntoa( t_in ), fd->singsing_min_port, fd->singsing_max_port);
 	else
-		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u) and tcp[13] = 18", inet_ntoa( t_in ), singsing_min_port, singsing_max_port);
+		sprintf(src,"dst host %s and (tcp[2:2] >= %u and tcp[2:2] <= %u) and tcp[13] = 18", inet_ntoa( t_in ), fd->singsing_min_port, fd->singsing_max_port);
 
-	if(pcap_compile(singsing_descr,&fp, src,0,netp) == -1) {
+	if(pcap_compile(fd->singsing_descr,&fp, src,0,netp) == -1) {
 
 		fprintf(stderr,"Error calling pcap_compile\n");
 		exit( EXIT_FAILURE ); 
 	}
 
-        if(pcap_setfilter(singsing_descr,&fp) == -1) {
+        if(pcap_setfilter(fd->singsing_descr,&fp) == -1) {
 		fprintf(stderr,"Error setting filter\n");
 		exit( EXIT_FAILURE );
 	}
 
-	while( pcap_dispatch(singsing_descr, 1 , singsing_packet_rec , NULL) >= 0 );
+	while( pcap_dispatch(fd->singsing_descr, 1 , singsing_packet_rec , (void *)fd) >= 0 );
 
 	return NULL;
 }
@@ -731,7 +741,7 @@ void singsing_set_thread_priority( int priority )
 }
 
 /* Get ip address from an interface */
-unsigned long singsing_get_ip(char* interface) 
+unsigned long singsing_get_ip( struct singsing_descriptor * fd, char* interface ) 
 {
 	int s;
 	struct ifreq  ifr;
@@ -756,7 +766,7 @@ unsigned long singsing_get_ip(char* interface)
 
 
 
-int singsing_bind_port( unsigned long ip )
+int singsing_bind_port( struct singsing_descriptor * fd, unsigned long ip )
 {
 	int i = 0;
          struct sockaddr_in addr;
@@ -768,10 +778,10 @@ int singsing_bind_port( unsigned long ip )
 		port ++;
 		
 		if( i == 0 )
-			singsing_min_port = port;
+			fd->singsing_min_port = port;
 
-		singsing_socket[i] = socket(AF_INET, SOCK_STREAM, 0);
-		if( singsing_socket[i] < 0 ) {		
+		fd->singsing_socket[i] = socket(AF_INET, SOCK_STREAM, 0);
+		if( fd->singsing_socket[i] < 0 ) {		
 			perror("open socket");
 			return -1;
 		}	
@@ -779,11 +789,11 @@ int singsing_bind_port( unsigned long ip )
 		memset(&addr, 0, sizeof(struct sockaddr_in));
         	addr.sin_family = AF_UNIX;
         	addr.sin_port = htons( port );
-		setsockopt(singsing_socket[i],SOL_SOCKET,SO_REUSEADDR,&j,sizeof(int));
-		if(bind(singsing_socket[i], (struct sockaddr *) &addr, sizeof(addr))<0) {
+		setsockopt(fd->singsing_socket[i],SOL_SOCKET,SO_REUSEADDR,&j,sizeof(int));
+		if(bind(fd->singsing_socket[i], (struct sockaddr *) &addr, sizeof(addr))<0) {
 		
 			for( l = 0; l<=i; l++)
-				close( singsing_socket[l] );
+				close( fd->singsing_socket[l] );
 				i = 0;
 		}
 		else
@@ -791,34 +801,34 @@ int singsing_bind_port( unsigned long ip )
 
 	} while( i != 500 );
 
-	singsing_max_port = port;
+	fd->singsing_max_port = port;
 
 	return 0;
 }
 
 //  PUBLIC FUNCTIONS
 
-void singsing_destroy( void )
+void singsing_destroy( struct singsing_descriptor * fd )
 {
 	int i = 0;
 	struct singsing_port_list * cur_port;
 
 	// Close open sockets
 	for( i=0; i<500;i++ )
-		close(singsing_socket[i]);
+		close(fd->singsing_socket[i]);
 	
-	close( singsing_raw_socket );
+	close( fd->singsing_raw_socket );
 
 	// Free port structure
-	while( singsing_first_port != NULL ) {
-		cur_port = singsing_first_port->next;
-		free( singsing_first_port);
-		singsing_first_port = cur_port;
+	while( fd->singsing_first_port != NULL ) {
+		cur_port = fd->singsing_first_port->next;
+		free( fd->singsing_first_port);
+		fd->singsing_first_port = cur_port;
 	}	
 
 }
 
-int singsing_set_scan_host( char * host)
+int singsing_set_scan_host( struct singsing_descriptor * fd, char * host )
 {
 	char * work_host;
 	char * maskarg = (char *)NULL;
@@ -841,14 +851,14 @@ struct in_addr t_in;
                 mask = mask;
         }
 
-        singsing_start_ip = ntohl((unsigned long)inet_addr(work_host)) & mask;
+        fd->singsing_start_ip = ntohl((unsigned long)inet_addr(work_host)) & mask;
 
-	singsing_end_ip = singsing_start_ip | ~mask;
+	fd->singsing_end_ip = fd->singsing_start_ip | ~mask;
 
 #ifdef DEBUG
-t_in.s_addr = ntohl( singsing_start_ip );
+t_in.s_addr = ntohl( fd->singsing_start_ip );
 fprintf(stderr," Start IP: %s\n",inet_ntoa(t_in));
-t_in.s_addr = ntohl( singsing_end_ip );
+t_in.s_addr = ntohl( fd->singsing_end_ip );
 fprintf(stderr," End   IP: %s\n",inet_ntoa(t_in)); 
 #endif
 
@@ -857,26 +867,26 @@ fprintf(stderr," End   IP: %s\n",inet_ntoa(t_in));
 
 
 
-int singsing_set_scan_interface( char * interface )
+int singsing_set_scan_interface( struct singsing_descriptor * fd, char * interface )
 {
-	singsing_device = interface;
+	fd->singsing_device = interface;
 	return 0;
 }
 
-void singsing_set_bandwidth(int a)
+void singsing_set_bandwidth( struct singsing_descriptor * fd, int a)
 {
-	singsing_band = a;
+	fd->singsing_band = a;
 }
 
-int singsing_scanisfinished( void ) 
+int singsing_scanisfinished( struct singsing_descriptor * fd ) 
 {
-	return singsing_finished;
+	return fd->singsing_finished;
 } 
 
 
-void singsing_get_status( struct singsing_status_struct * cur )
+void singsing_get_status( struct singsing_descriptor * fd, struct singsing_status_struct * cur )
 {
-	memcpy( cur, &singsing_cur_status, sizeof( singsing_cur_status ) );
+	memcpy( cur, &fd->singsing_cur_status, sizeof( struct singsing_status_struct ) );
 
 	cur->current_time = time(NULL);
 
@@ -884,7 +894,39 @@ void singsing_get_status( struct singsing_status_struct * cur )
 }
 
 
-void singsing_set_scanmode( int a )
+void singsing_set_scanmode( struct singsing_descriptor * fd, int a )
 {
-	singsing_scan_mode |= a;
+	fd->singsing_scan_mode |= a;
+}
+
+void singsing_create( struct singsing_descriptor * fd )
+{
+	fd->singsing_band = 5;
+	fd->singsing_device = NULL;
+	fd->singsing_start_ip = 0;
+	fd->singsing_end_ip = 0;
+	fd->singsing_min_port = 0;
+	fd->singsing_max_port = 0;
+
+	fd->singsing_descr	= NULL;
+	fd->singsing_ipid	= 0;
+	fd->singsing_finished 	= 0;
+	fd->singsing_ports = 0;
+	fd->singsing_sleep_band = 0;
+	fd->singsing_cur_port = 0;
+	fd->singsing_scan_mode = SINGSING_BASIC_SCAN;
+
+	// Data lists
+	fd->singsing_first_port = NULL;
+	fd->singsing_last_port = NULL;
+
+	fd->singsing_first_result = NULL;
+	fd->singsing_last_result = NULL;
+	
+	pthread_mutex_init(&fd->singsing_result_queue_lock, NULL);
+
+	pthread_mutex_init(&fd->packet_queue_lock, NULL);
+
+	fd->singsing_first_packet = NULL;
+	fd->singsing_last_packet = NULL;
 }
