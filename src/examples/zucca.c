@@ -105,7 +105,7 @@ int main( int argc, char ** argv )
 		}
 	}
 
-	fprintf(stderr, "\n zucca syn scanner v%s with singsing v%s\n", VERSION, SINGSING_VERSION);
+	fprintf(stderr, "\n zucca syn scanner v%s with singsing v%s revision %s\n", VERSION, SINGSING_VERSION, SINGSING_REVISION);
         fprintf(stderr, " by inode@wayreth.eu.org\n\n");
 
 	host_ports = 0;

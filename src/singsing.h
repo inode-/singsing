@@ -3,7 +3,7 @@
  *                                                                           *
  * http://singsing.woolly-sheep.net                                          *
  *                                                                           *
- * $Id::                                                                  $: *
+ * $Id:: singsing.h 22 2007-11-21 20:51:59Z inode_                        $: *
  *                                                                           *
  * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
  * All rights reserved.                                                      *
@@ -40,6 +40,8 @@
 #define _SINGSING_H
 
 #define SINGSING_VERSION "0.4"
+
+#define SINGSING_REVISION       "$revision$"
 
 #include <stdio.h>
 #include <unistd.h>
