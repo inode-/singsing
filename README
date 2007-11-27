@@ -32,6 +32,10 @@ examples/zucca.c
 ----------------------------
 syn scanner
 
+examples/zuccorale.c
+----------------------------
+oracle scanner
+
 examples/telnet_grabber.c
 ----------------------------
 telnet banner grabbing tool

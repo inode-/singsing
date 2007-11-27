@@ -1,5 +1,6 @@
 $Id$
 
+* Added zuccorale.c on example
 * Added time statistics on zucca
 * Removed all global variables
 * Added show closed port on zucca
