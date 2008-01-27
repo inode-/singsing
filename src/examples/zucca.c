@@ -1,11 +1,9 @@
 /*****************************************************************************
  * zucca.c is a part of singsing project                                     *
  *                                                                           *
- * http://singsing.woolly-sheep.net                                          *
- *                                                                           *
  * $Id::                                                                  $: *
  *                                                                           *
- * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
+ * Copyright (c) 2007, Agazzini Maurizio - inode@mediaservice.net            *
  * All rights reserved.                                                      *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
@@ -17,7 +15,7 @@
  *       notice, this list of conditions and the following disclaimer in     *
  *       the documentation and/or other materials provided with the          *
  *       distribution.                                                       *
- *     * Neither the name of Agazzini Maurizio nor the names of its          *
+ *     * Neither the name of @ Mediaservice.net nor the names of its         *
  *       contributors may be used to endorse or promote products derived     *
  *       from this software without specific prior written permission.       *
  *                                                                           *
@@ -106,7 +104,7 @@ int main( int argc, char ** argv )
 	}
 
 	fprintf(stderr, "\n zucca syn scanner v%s with singsing v%s revision %s\n", VERSION, SINGSING_VERSION, SINGSING_REVISION);
-        fprintf(stderr, " by inode@wayreth.eu.org\n\n");
+        fprintf(stderr, " by inode@mediaservice.net\n\n");
 
 	host_ports = 0;
 

@@ -1,10 +1,8 @@
 /*****************************************************************************
- * Copyright (c) 2007, Agazzini Maurizio - inode@wayreth.eu.org              *
+ * Copyright (c) 2007, Agazzini Maurizio - inode@mediaservice.net            *
  * All rights reserved.                                                      *
  *                                                                           *
  * ssh_scan.c                                                                *
- *                                                                           *
- * http://singsing.woolly-sheep.net                                          *
  *                                                                           *
  * * $Id::                                                                $: *
  *                                                                           *
@@ -17,7 +15,7 @@
  *       notice, this list of conditions and the following disclaimer in     *
  *       the documentation and/or other materials provided with the          *
  *       distribution.                                                       *
- *     * Neither the name of Agazzini Maurizio nor the names of its          *
+ *     * Neither the name of @ Mediaservice.net nor the names of its         *
  *       contributors may be used to endorse or promote products derived     *
  *       from this software without specific prior written permission.       *
  *                                                                           *
