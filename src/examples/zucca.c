@@ -72,9 +72,11 @@ int main( int argc, char ** argv )
 
 	struct tm ts;
 
+	int stats = 1;
+
 	singsing_create(&fd);
 
-	while((opt = getopt(argc, argv, "i:b:p:h:ct:s:")) != -1)
+	while((opt = getopt(argc, argv, "i:b:p:h:ct:s")) != -1)
 	{
 		switch (opt)
                 {
@@ -94,8 +96,7 @@ int main( int argc, char ** argv )
 				singsing_set_scanmode( &fd, SINGSING_SHOW_CLOSED );
 				break;
 			case 's':
-// 				sleeper = atoi( optarg );
- 				fprintf(stderr, "\noption -s not implemented yet\n");
+				stats = 0;
 				break;
 			default :
 				usage(argv[0]);
@@ -126,7 +127,8 @@ int main( int argc, char ** argv )
 		usage(argv[0]);
 	}
 
-	tty_raw();
+	if( stats == 1 )
+		tty_raw();
 
         do {
                 cur_res = singsing_get_result(&fd);
@@ -141,8 +143,7 @@ int main( int argc, char ** argv )
                         free(cur_res);
                 } else {
                         usleep(300000);
-
-			if( getch() > 0 ) {
+			if( stats == 1 && getch() > 0 ) {
 				singsing_get_status(&fd, &current_status);
 
 				cur = current_status.init_time;
@@ -166,8 +167,9 @@ int main( int argc, char ** argv )
 	singsing_get_status(&fd, &current_status);
 
 	fprintf( stderr, " %lu ports scanned in %.0lf seconds\n", current_status.total_port, difftime(endtime, current_status.init_time));
-
-	tty_normal();
+	
+	if ( stats == 1 )
+		tty_normal();
 
 	singsing_destroy(&fd);	
 
@@ -242,7 +244,8 @@ void usage( char * argv0 )
 	fprintf( stderr, " -i Interface\n");
 	fprintf( stderr, " -b Usable bandwidth in KB (Default 15)\n");
 	fprintf( stderr, " -p Ports (ex 22,23,40-50,99)\n");   
- 	fprintf( stderr, " -c Display closed ports\n\n");
+ 	fprintf( stderr, " -c Display closed ports\n");
+	fprintf( stderr, " -s Don't use stats\n\n");
 
 	exit( EXIT_FAILURE );
 }
