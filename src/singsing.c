@@ -830,11 +830,15 @@ int singsing_set_scan_host( struct singsing_descriptor * fd, char * host )
 {
 	char * work_host;
 	char * maskarg = (char *)NULL;
-	unsigned long mask = 0xffffffff;
+	unsigned long mask = 0;
 
 #ifdef DEBUG
 struct in_addr t_in;
 #endif
+
+
+	// Fix for 64bit processors
+	mask --;
 
 	work_host = strdup( host );
 
