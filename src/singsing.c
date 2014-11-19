@@ -773,6 +773,10 @@ int singsing_bind_port( struct singsing_descriptor * fd, unsigned long ip )
 	int port = 2000;
 
 	do {
+		if( port == 65535 ) {
+			fprintf(stderr, "can't allocate ports\n");
+			exit(1);
+		}
 		port ++;
 		
 		if( i == 0 )
@@ -785,7 +789,8 @@ int singsing_bind_port( struct singsing_descriptor * fd, unsigned long ip )
 		}	
 
 		memset(&addr, 0, sizeof(struct sockaddr_in));
-        	addr.sin_family = AF_UNIX;
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = INADDR_ANY;
         	addr.sin_port = htons( port );
 		setsockopt(fd->singsing_socket[i],SOL_SOCKET,SO_REUSEADDR,&j,sizeof(int));
 		if(bind(fd->singsing_socket[i], (struct sockaddr *) &addr, sizeof(addr))<0) {
