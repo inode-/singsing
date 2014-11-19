@@ -248,6 +248,11 @@ void * singsing_processing_thread(void *parm)
                                 memcpy( &tcp_p , (tmp_queue->packet + sizeof(struct ether_header) + \
 					sizeof( struct ip )) +2, sizeof(tcp_p) );
                                 break;
+			case DLT_RAW:
+				memcpy( &ip_p, tmp_queue->packet, sizeof(ip_p));
+				memcpy( &tcp_p, (tmp_queue->packet + \
+					sizeof( struct ip )),  sizeof(tcp_p) );
+				break;
 
                         default: 
                                 fprintf(stderr, "error: unsupported link-layer type: %s\n", \
